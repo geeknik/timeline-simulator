@@ -24,11 +24,27 @@ class SimulationConfig:
     
     The parameters control the quantum mechanical aspects of timeline superposition,
     decoherence effects, and measurement statistics in the life-death state space.
+    
+    Attributes:
+        num_trait_qubits: Number of qubits encoding personal traits
+        num_timeline_steps: Number of timesteps to simulate
+        measurement_frequency: How often to force measurements (0-1)
+        decoherence_rates: Dict mapping trait indices to decoherence rates
+        branch_points: List of timesteps where timeline branches
+        shots: Number of simulation shots
     """
-    num_timelines: int = 1
-    decoherence_rate: float = 0.05
+    num_trait_qubits: int = 3
+    num_timeline_steps: int = 5
+    measurement_frequency: float = 0.2
+    decoherence_rates: Dict[int, float] = None
+    branch_points: List[int] = None
     shots: int = 1000
-    death_probability: float = 0.3
+
+    def __post_init__(self):
+        if self.decoherence_rates is None:
+            self.decoherence_rates = {i: 0.05 for i in range(self.num_trait_qubits)}
+        if self.branch_points is None:
+            self.branch_points = [2, 4]  # Default branch points at steps 2 and 4
 
 class QuantumTimelineSimulator:
     """
@@ -57,22 +73,47 @@ class QuantumTimelineSimulator:
         """
         self.config = config
         try:
-            self.qr = QuantumRegister(config.num_timelines, 'timeline')
-            self.cr = ClassicalRegister(config.num_timelines, 'measurement')
-            self.circuit = QuantumCircuit(self.qr, self.cr)
-            self.noise_model = self._create_noise_model()
-            logger.info(f"Initialized simulator with {config.num_timelines} timeline(s)")
+            # Create registers for traits and their measurements
+            self.trait_qr = QuantumRegister(config.num_trait_qubits, 'traits')
+            self.trait_cr = ClassicalRegister(config.num_trait_qubits, 'trait_measures')
+            
+            # Create ancilla qubits for timeline branching
+            self.branch_qr = QuantumRegister(len(config.branch_points), 'branch')
+            self.branch_cr = ClassicalRegister(len(config.branch_points), 'branch_measures')
+            
+            # Initialize quantum circuit with all registers
+            self.circuit = QuantumCircuit(
+                self.trait_qr, self.branch_qr,
+                self.trait_cr, self.branch_cr
+            )
+            
+            # Create custom noise model for each trait
+            self.noise_models = self._create_noise_models()
+            
+            # Track the current timestep
+            self.current_step = 0
+            
+            logger.info(f"Initialized simulator with {config.num_trait_qubits} trait qubits")
         except Exception as e:
             logger.error(f"Failed to initialize quantum simulator: {e}")
             raise
 
-    def _create_noise_model(self) -> NoiseModel:
-        """Create a noise model to simulate decoherence effects."""
+    def _create_noise_models(self) -> Dict[int, NoiseModel]:
+        """Create custom noise models for each trait qubit."""
         try:
-            noise_model = NoiseModel()
-            error = depolarizing_error(self.config.decoherence_rate, 1)
-            noise_model.add_all_qubit_quantum_error(error, ['x', 'h'])
-            return noise_model
+            noise_models = {}
+            for idx, rate in self.config.decoherence_rates.items():
+                model = NoiseModel()
+                # Create custom error channels for each trait
+                phase_error = depolarizing_error(rate, 1)
+                amp_error = depolarizing_error(rate/2, 1)  # Less amplitude damping
+                
+                # Add errors to specific operations
+                model.add_quantum_error(phase_error, ['rz', 'h'], [idx])
+                model.add_quantum_error(amp_error, ['x', 'cx'], [idx])
+                noise_models[idx] = model
+            
+            return noise_models
         except Exception as e:
             logger.error(f"Failed to create noise model: {e}")
             raise
