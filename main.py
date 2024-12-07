@@ -235,11 +235,15 @@ class QuantumTimelineSimulator:
         try:
             total_shots = sum(counts.values())
             
-            # Count states where all qubits are in |0⟩ state (survival)
-            all_zero_state = '0' * (self.config.num_trait_qubits + len(self.config.branch_points))
-            survival_count = counts.get(all_zero_state, 0)
+            # Count states where all trait qubits are in |0⟩ state (survival)
+            # Since traits are measured first, they are the rightmost bits
+            trait_bits = self.config.num_trait_qubits
+            survival_count = sum(
+                count for state, count in counts.items() 
+                if state[-trait_bits:] == '0' * trait_bits
+            )
             
-            # Calculate basic statistics
+            # Calculate basic statistics 
             survival_rate = survival_count / total_shots
             death_rate = 1 - survival_rate
             
