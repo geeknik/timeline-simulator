@@ -1,5 +1,5 @@
 from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister
-from qiskit.compiler import execute
+from qiskit_aer import AerSimulator
 from qiskit_aer import Aer  # Updated import
 from qiskit_aer.noise import NoiseModel, depolarizing_error  # Updated import
 from qiskit.visualization import plot_histogram, plot_bloch_multivector
@@ -116,11 +116,8 @@ class QuantumTimelineSimulator:
             Dict containing measurement results
         """
         try:
-            backend = Aer.get_backend('qasm_simulator')
-            job = execute(self.circuit, 
-                         backend=backend,
-                         shots=self.config.shots,
-                         noise_model=self.noise_model)
+            backend = AerSimulator(noise_model=self.noise_model)
+            job = backend.run(self.circuit, shots=self.config.shots)
             counts = job.result().get_counts(self.circuit)
             logger.info(f"Simulation completed with {self.config.shots} shots")
             return counts
