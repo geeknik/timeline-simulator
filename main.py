@@ -1,5 +1,5 @@
 from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister
-from qiskit.execute_function import execute
+from qiskit.primitives import execute
 from qiskit_aer import Aer  # Updated import
 from qiskit_aer.noise import NoiseModel, depolarizing_error  # Updated import
 from qiskit.visualization import plot_histogram, plot_bloch_multivector
