@@ -39,6 +39,8 @@ class SimulationConfig:
     decoherence_rates: Dict[int, float] = None
     branch_points: List[int] = None
     shots: int = 1000
+    death_probability: float = 0.3
+    decoherence_rate: float = 0.05
 
     def __post_init__(self):
         if self.decoherence_rates is None:
@@ -347,9 +349,8 @@ if __name__ == "__main__":
     
     # Example usage with custom configuration
     config = SimulationConfig(
-        num_timelines=2,
-        death_probability=0.3,
         shots=1000,
+        death_probability=0.3,
         decoherence_rate=0.05
     )
     
