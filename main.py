@@ -3,7 +3,7 @@ from qiskit_aer import AerSimulator
 from qiskit_aer import Aer  # Updated import
 from qiskit_aer.noise import NoiseModel, depolarizing_error  # Updated import
 from qiskit.visualization import plot_histogram, plot_bloch_multivector
-from qiskit.quantum_info import DensityMatrix, partial_trace, Statevector
+from qiskit.quantum_info import DensityMatrix, partial_trace, Statevector, entropy
 import numpy as np
 import matplotlib.pyplot as plt
 from typing import Optional, Tuple, Dict, List
@@ -151,6 +151,21 @@ class QuantumTimelineSimulator:
 
     def analyze_results(self, counts: Dict) -> Dict[str, float]:
         """
+        Analyze simulation results and compute quantum mechanical metrics.
+        
+        Computes:
+        - Survival/death statistics
+        - Von Neumann entropy to quantify quantum correlations
+        - Density matrix visualization for quantum state analysis
+        - Timeline entanglement measures
+        
+        Args:
+            counts: Measurement counts dictionary
+            
+        Returns:
+            Dictionary containing analysis metrics and quantum state data
+        """
+        """
         Analyze simulation results and compute statistics.
         
         Args:
@@ -165,11 +180,28 @@ class QuantumTimelineSimulator:
                                 for i in range(2**self.config.num_timelines)
                                 if bin(i).count('1') < self.config.num_timelines)
             
+            # Calculate quantum state properties
+            statevector = Statevector.from_instruction(self.circuit)
+            density_matrix = DensityMatrix.from_instruction(self.circuit)
+            
+            # Calculate von Neumann entropy
+            entropy_value = entropy(density_matrix)
+            
+            # Calculate reduced density matrices for each timeline
+            reduced_matrices = []
+            for i in range(self.config.num_timelines):
+                reduced = partial_trace(density_matrix, [j for j in range(self.config.num_timelines) if j != i])
+                reduced_matrices.append(reduced)
+            
             analysis = {
                 'survival_rate': survival_counts / total_measurements,
                 'death_rate': 1 - (survival_counts / total_measurements),
                 'total_measurements': total_measurements,
-                'unique_outcomes': len(counts)
+                'unique_outcomes': len(counts),
+                'quantum_entropy': float(entropy_value),
+                'density_matrix': density_matrix.data.tolist(),
+                'reduced_density_matrices': [m.data.tolist() for m in reduced_matrices],
+                'quantum_state_purity': float(density_matrix.purity())
             }
             
             logger.info(f"Analysis completed: Survival rate = {analysis['survival_rate']:.2%}")
@@ -225,5 +257,8 @@ if __name__ == "__main__":
         print(f"Survival Rate: {results['analysis']['survival_rate']:.2%}")
         print(f"Death Rate: {results['analysis']['death_rate']:.2%}")
         print(f"Measurement Counts: {results['counts']}")
+        print(f"\nQuantum Metrics:")
+        print(f"Von Neumann Entropy: {results['analysis']['quantum_entropy']:.4f}")
+        print(f"Quantum State Purity: {results['analysis']['quantum_state_purity']:.4f}")
     except Exception as e:
         print(f"Experiment failed: {e}")
