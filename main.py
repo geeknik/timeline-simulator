@@ -177,9 +177,12 @@ class QuantumTimelineSimulator:
             raise
 
     def measure_timelines(self) -> None:
-        """Measure all timeline qubits."""
+        """Measure all trait and branch qubits."""
         try:
-            self.circuit.measure(self.qr, self.cr)
+            # Measure trait qubits
+            self.circuit.measure(self.trait_qr, self.trait_cr)
+            # Measure branch qubits
+            self.circuit.measure(self.branch_qr, self.branch_cr)
             logger.info("Added measurement operations")
         except Exception as e:
             logger.error(f"Failed to add measurements: {e}")
@@ -196,7 +199,7 @@ class QuantumTimelineSimulator:
         """
         try:
             # Create a copy of circuit without measurements for state analysis
-            state_circuit = QuantumCircuit(self.qr)
+            state_circuit = QuantumCircuit(self.trait_qr, self.branch_qr)
             for inst in self.circuit.data:
                 if inst.operation.name != "measure":
                     state_circuit.append(inst.operation, inst.qubits, inst.clbits)
