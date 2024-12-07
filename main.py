@@ -132,19 +132,28 @@ class QuantumTimelineSimulator:
             logger.error(f"Failed to add measurements: {e}")
             raise
 
-    def simulate(self) -> Dict:
+    def simulate(self) -> Tuple[Dict, QuantumCircuit]:
         """
         Execute the quantum circuit simulation.
         
         Returns:
-            Dict containing measurement results
+            Tuple containing:
+            - Dict of measurement results
+            - QuantumCircuit without measurements for state analysis
         """
         try:
+            # Create a copy of circuit without measurements for state analysis
+            state_circuit = QuantumCircuit(self.qr)
+            for inst in self.circuit.data:
+                if inst[0].name != "measure":
+                    state_circuit.append(inst[0], inst[1], inst[2])
+            
+            # Run the measurement circuit
             backend = AerSimulator(noise_model=self.noise_model)
             job = backend.run(self.circuit, shots=self.config.shots)
             counts = job.result().get_counts(self.circuit)
             logger.info(f"Simulation completed with {self.config.shots} shots")
-            return counts
+            return counts, state_circuit
         except Exception as e:
             logger.error(f"Simulation failed: {e}")
             raise
@@ -180,9 +189,9 @@ class QuantumTimelineSimulator:
                                 for i in range(2**self.config.num_timelines)
                                 if bin(i).count('1') < self.config.num_timelines)
             
-            # Calculate quantum state properties
-            statevector = Statevector.from_instruction(self.circuit)
-            density_matrix = DensityMatrix.from_instruction(self.circuit)
+            # Calculate quantum state properties from the state circuit
+            statevector = Statevector.from_instruction(self.state_circuit)
+            density_matrix = DensityMatrix.from_instruction(self.state_circuit)
             
             # Calculate von Neumann entropy
             entropy_value = entropy(density_matrix)
@@ -230,7 +239,7 @@ def run_timeline_experiment(config: SimulationConfig = SimulationConfig()) -> Di
         simulator.measure_timelines()
         
         # Run simulation
-        counts = simulator.simulate()
+        counts, simulator.state_circuit = simulator.simulate()
         analysis = simulator.analyze_results(counts)
         
         return {
