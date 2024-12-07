@@ -319,7 +319,7 @@ def run_quantum_evolution_experiment(config: SimulationConfig = SimulationConfig
         
         # Create and execute quantum circuit
         simulator.initialize_traits()
-        simulator.apply_death_event()
+        simulator.apply_projection_measurement()
         simulator.entangle_timelines()
         simulator.measure_timelines()
         
@@ -343,8 +343,8 @@ if __name__ == "__main__":
     # Configure quantum simulation parameters
     config = SimulationConfig(
         shots=1000,
-        projection_probability=0.3,  # Probability of state projection
-        decoherence_rate=0.05       # Environmental decoherence rate
+        death_probability=0.3,  # Probability of state projection
+        decoherence_rate=0.05  # Environmental decoherence rate
     )
     
     try:
