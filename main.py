@@ -118,30 +118,30 @@ class QuantumTimelineSimulator:
             logger.error(f"Failed to create noise model: {e}")
             raise
 
-    def initialize_superposition(self, alpha: float = 1/np.sqrt(2)) -> None:
+    def initialize_traits(self) -> None:
         """
-        Initialize timeline(s) in superposition of alive/dead states.
+        Initialize trait qubits in superposition states.
         
-        Creates the quantum state |ψ⟩ = α|alive⟩ + β|dead⟩ where:
-        - |alive⟩ corresponds to |0⟩ basis state
-        - |dead⟩ corresponds to |1⟩ basis state
-        - β = √(1-α²) to maintain normalization
-        
-        This superposition represents the fundamental uncertainty between
-        life and death states in the quantum mechanical framework.
-        
-        Args:
-            alpha: Amplitude of the alive state (|0⟩), controls the initial
-                  bias between life/death probabilities
+        Creates a complex superposition of trait states, with each trait
+        having its own quantum amplitude and phase. This allows for
+        modeling of personality/consciousness traits as quantum states.
         """
         try:
-            if not 0 <= alpha <= 1:
-                raise ValueError("Alpha must be between 0 and 1")
+            # Initialize each trait in a unique superposition
+            for i in range(self.config.num_trait_qubits):
+                # Create different superposition angles for variety
+                theta = np.pi * (i + 1)/(2 * self.config.num_trait_qubits)
+                phi = np.pi * i/self.config.num_trait_qubits
+                
+                # Apply rotation gates to create superposition
+                self.circuit.ry(theta, self.trait_qr[i])
+                self.circuit.rz(phi, self.trait_qr[i])
+                
+            # Entangle traits with controlled operations
+            for i in range(self.config.num_trait_qubits - 1):
+                self.circuit.cx(self.trait_qr[i], self.trait_qr[i + 1])
             
-            beta = np.sqrt(1 - alpha**2)
-            for i in range(self.config.num_timelines):
-                self.circuit.ry(2 * np.arccos(alpha), i)
-            logger.info(f"Initialized superposition with α={alpha:.3f}")
+            logger.info("Initialized trait superpositions")
         except Exception as e:
             logger.error(f"Failed to initialize superposition: {e}")
             raise
