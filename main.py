@@ -329,7 +329,7 @@ def run_timeline_experiment(config: SimulationConfig = SimulationConfig()) -> Di
         simulator = QuantumTimelineSimulator(config)
         
         # Create and execute quantum circuit
-        simulator.initialize_superposition()
+        simulator.initialize_traits()
         simulator.apply_death_event()
         simulator.entangle_timelines()
         simulator.measure_timelines()
