@@ -227,36 +227,6 @@ class QuantumTimelineSimulator:
 
     def analyze_results(self, counts: Dict) -> Dict[str, float]:
         """
-        Perform rigorous quantum state tomography and statistical analysis.
-        
-        This method implements full quantum state tomography to reconstruct
-        the density matrix ρ from measurement data. It includes:
-        
-        1. Maximum likelihood estimation of the quantum state
-        2. Error bounds via bootstrapping
-        3. Validation against physical constraints:
-           - Trace preservation: Tr(ρ) = 1
-           - Hermiticity: ρ = ρ†
-           - Positive semidefiniteness: ⟨ψ|ρ|ψ⟩ ≥ 0
-        
-        The analysis computes:
-        - Full density matrix reconstruction with error bounds
-        - Von Neumann entropy S(ρ) = -Tr(ρ log ρ)
-        - Purity γ = Tr(ρ²) to quantify decoherence
-        - Entanglement witnesses and measures
-        - Statistical significance tests
-        
-        Args:
-            counts: Raw measurement counts dictionary
-            
-        Returns:
-            Dictionary containing:
-            - Reconstructed density matrix with uncertainties
-            - Quantum mechanical observables and metrics
-            - Statistical validation results
-            - Error bounds and confidence intervals
-        """
-        """
         Analyze simulation results and compute statistics.
         
         Args:
@@ -266,63 +236,26 @@ class QuantumTimelineSimulator:
             Dictionary containing analysis metrics
         """
         try:
-            total_measurements = sum(counts.values())
-            survival_counts = sum(counts.get(bin(i)[2:].zfill(self.config.num_timelines), 0)
-                                for i in range(2**self.config.num_timelines)
-                                if bin(i).count('1') < self.config.num_timelines)
+            total_shots = sum(counts.values())
             
-            # Perform quantum state tomography
-            tomo_data = self._collect_tomography_data()
+            # Count states where all qubits are in |0⟩ state (survival)
+            all_zero_state = '0' * (self.config.num_trait_qubits + len(self.config.branch_points))
+            survival_count = counts.get(all_zero_state, 0)
             
-            # Maximum likelihood estimation of density matrix
-            rho, uncertainties = self._maximum_likelihood_estimation(tomo_data)
+            # Calculate basic statistics
+            survival_rate = survival_count / total_shots
+            death_rate = 1 - survival_rate
             
-            # Validate physical constraints
-            if not self._validate_density_matrix(rho):
-                raise ValueError("Reconstructed state violates quantum mechanical constraints")
-            
-            # Calculate quantum mechanical observables
-            entropy_value = entropy(rho)
-            purity = self._calculate_purity(rho)
-            concurrence = self._calculate_concurrence(rho)
-            
-            # Perform statistical analysis
-            bootstrap_results = self._bootstrap_analysis(tomo_data, 1000)
-            confidence_intervals = self._compute_confidence_intervals(bootstrap_results)
-            
-            # Calculate reduced density matrices with error propagation
-            reduced_matrices = []
-            reduced_uncertainties = []
-            for i in range(self.config.num_trait_qubits):
-                reduced, uncert = self._partial_trace_with_errors(rho, uncertainties, i)
-                reduced_matrices.append(reduced)
-                reduced_uncertainties.append(uncert)
+            # Calculate quantum entropy from measurement distribution
+            probabilities = [count/total_shots for count in counts.values()]
+            quantum_entropy = -sum(p * np.log2(p) for p in probabilities if p > 0)
             
             analysis = {
-                'quantum_state': {
-                    'density_matrix': rho.data.tolist(),
-                    'uncertainties': uncertainties.tolist(),
-                    'eigenvalues': np.linalg.eigvals(rho).tolist(),
-                    'purity': float(purity),
-                    'concurrence': float(concurrence)
-                },
-                'entropy_analysis': {
-                    'von_neumann_entropy': float(entropy_value),
-                    'confidence_interval': confidence_intervals['entropy']
-                },
-                'reduced_states': [{
-                    'density_matrix': rm.data.tolist(),
-                    'uncertainties': ru.tolist()
-                } for rm, ru in zip(reduced_matrices, reduced_uncertainties)],
-                'statistical_tests': {
-                    'chi_squared': self._chi_squared_test(counts),
-                    'kolmogorov_smirnov': self._ks_test(counts)
-                },
-                'validation': {
-                    'trace_preservation': np.abs(np.trace(rho) - 1.0),
-                    'hermiticity_error': np.linalg.norm(rho - rho.conj().T),
-                    'minimum_eigenvalue': float(min(np.linalg.eigvals(rho).real))
-                }
+                'survival_rate': survival_rate,
+                'death_rate': death_rate,
+                'quantum_entropy': quantum_entropy,
+                'total_states': len(counts),
+                'measurement_counts': counts
             }
             
             logger.info(f"Analysis completed: Survival rate = {analysis['survival_rate']:.2%}")
@@ -388,8 +321,9 @@ if __name__ == "__main__":
         counts_table.add_column("Count", justify="right")
         counts_table.add_column("Percentage", justify="right")
         
+        total_shots = sum(results['counts'].values())
         for state, count in results['counts'].items():
-            percentage = count/config.shots
+            percentage = count/total_shots
             color = "green" if state.count('1') == 0 else "yellow" if state.count('1') == 1 else "red"
             counts_table.add_row(
                 f"|{state}⟩",
@@ -404,8 +338,8 @@ if __name__ == "__main__":
             f"[blue]{results['analysis']['quantum_entropy']:.6f}[/] bits"
         )
         metrics_table.add_row(
-            "Quantum State Purity",
-            f"[magenta]{results['analysis']['quantum_state_purity']:.6f}[/]"
+            "Total States",
+            f"[magenta]{results['analysis']['total_states']}[/]"
         )
         
         # Display everything
