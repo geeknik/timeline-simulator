@@ -112,7 +112,11 @@ class QuantumTimelineSimulator:
                 
                 # Add errors to specific operations
                 model.add_quantum_error(phase_error, ['rz', 'h'], [idx])
-                model.add_quantum_error(amp_error, ['x', 'cx'], [idx])
+                model.add_quantum_error(amp_error, ['x'], [idx])
+                
+                # Create and add two-qubit error for cx gates
+                two_qubit_error = depolarizing_error(rate/2, 2)  # Lower rate for 2-qubit gates
+                model.add_quantum_error(two_qubit_error, ['cx'], [idx, (idx+1) % self.config.num_trait_qubits])
                 noise_models[idx] = model
             
             return noise_models
