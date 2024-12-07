@@ -77,8 +77,17 @@ class QuantumTimelineSimulator:
         """
         Initialize timeline(s) in superposition of alive/dead states.
         
+        Creates the quantum state |ψ⟩ = α|alive⟩ + β|dead⟩ where:
+        - |alive⟩ corresponds to |0⟩ basis state
+        - |dead⟩ corresponds to |1⟩ basis state
+        - β = √(1-α²) to maintain normalization
+        
+        This superposition represents the fundamental uncertainty between
+        life and death states in the quantum mechanical framework.
+        
         Args:
-            alpha: Amplitude of the alive state (|0⟩)
+            alpha: Amplitude of the alive state (|0⟩), controls the initial
+                  bias between life/death probabilities
         """
         try:
             if not 0 <= alpha <= 1:
