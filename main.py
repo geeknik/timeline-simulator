@@ -20,18 +20,26 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class SimulationConfig:
-    """Configuration parameters for quantum timeline simulation.
+    """Configuration parameters for quantum state evolution simulation.
     
-    The parameters control the quantum mechanical aspects of timeline superposition,
-    decoherence effects, and measurement statistics in the life-death state space.
+    Models a multi-qubit system subject to unitary evolution, environmental decoherence,
+    and projective measurements. Based on standard decoherence theory (Zurek 2003) and 
+    the quantum measurement formalism.
     
     Attributes:
-        num_trait_qubits: Number of qubits encoding personal traits
-        num_timeline_steps: Number of timesteps to simulate
-        measurement_frequency: How often to force measurements (0-1)
-        decoherence_rates: Dict mapping trait indices to decoherence rates
-        branch_points: List of timesteps where timeline branches
-        shots: Number of simulation shots
+        num_trait_qubits: Number of qubits in primary register
+        num_timeline_steps: Number of evolution timesteps
+        measurement_frequency: Frequency of projective measurements (0-1)
+        decoherence_rates: Dict mapping qubit indices to their decoherence rates
+        branch_points: Timesteps where state vector branching occurs
+        shots: Number of experimental shots for statistics
+        projection_probability: Probability of state projection during measurement
+        decoherence_rate: Base environmental decoherence rate
+        num_branches: Number of potential state vector branches to track
+    
+    References:
+        - Zurek, W.H. (2003). Decoherence, einselection, and the quantum origins of the classical.
+        - Schlosshauer, M. (2007). Decoherence and the Quantum-to-Classical Transition.
     """
     num_trait_qubits: int = 3
     num_timeline_steps: int = 5
@@ -51,21 +59,34 @@ class SimulationConfig:
 
 class QuantumTimelineSimulator:
     """
-    A quantum simulator for exploring timeline deaths using quantum superposition and decoherence.
+    A quantum simulator implementing state vector evolution under decoherence and measurement.
     
-    This implementation models the metaphysical uncertainty between life and death states
-    as a quantum superposition |ψ⟩ = α|alive⟩ + β|dead⟩. The decoherence effects represent
-    the gradual collapse of quantum uncertainty through environmental interaction.
+    This implementation models a multi-qubit system evolving under:
+    1. Unitary dynamics (quantum gates)
+    2. Environmental decoherence (noise channels)
+    3. Projective measurements
     
-    Key quantum mechanical concepts:
-    - Death events as quantum measurements
-    - Timeline branching through unitary evolution
-    - Decoherence as a model for mortality
-    - Information preservation in quantum states
+    The system state |ψ⟩ evolves as:
+    |ψ(t)⟩ = U(t)|ψ(0)⟩ for unitary U(t)
     
-    The simulator provides a rigorous mathematical framework for exploring the connection
-    between quantum measurement theory and consciousness, while maintaining the formal
-    structure of quantum mechanics.
+    Under decoherence, the density matrix ρ evolves as:
+    ρ(t) = Σᵢ Kᵢ(t)ρ(0)Kᵢ†(t) 
+    where Kᵢ are Kraus operators representing the noise channel
+    
+    Key quantum mechanical features:
+    - Unitary evolution via quantum gates
+    - Decoherence via standard noise models
+    - Projective measurements causing state collapse
+    - Entanglement between subsystems
+    - Von Neumann entropy tracking
+    
+    The simulator provides a rigorous framework for studying quantum state
+    evolution under realistic noise and measurement conditions, following
+    standard quantum mechanical formalism.
+    
+    References:
+        - Nielsen & Chuang (2010). Quantum Computation and Quantum Information.
+        - Zurek (2003). Decoherence and the transition from quantum to classical.
     """
     def __init__(self, config: SimulationConfig = SimulationConfig()):
         """
@@ -161,8 +182,13 @@ class QuantumTimelineSimulator:
             logger.error(f"Failed to initialize superposition: {e}")
             raise
 
-    def apply_death_event(self) -> None:
-        """Apply a potential death event with configured probability."""
+    def apply_projection_measurement(self) -> None:
+        """Apply a projective measurement with configured probability.
+        
+        Implements a controlled projection onto the computational basis states
+        using rotation gates followed by measurement. The projection probability
+        determines the angle of rotation, following standard measurement theory.
+        """
         try:
             theta = 2 * np.arcsin(np.sqrt(self.config.death_probability))
             # Apply death probability rotation to each trait qubit
@@ -265,15 +291,28 @@ class QuantumTimelineSimulator:
             logger.error(f"Analysis failed: {e}")
             raise
 
-def run_timeline_experiment(config: SimulationConfig = SimulationConfig()) -> Dict:
+def run_quantum_evolution_experiment(config: SimulationConfig = SimulationConfig()) -> Dict:
     """
-    Run a complete timeline death experiment.
+    Run a complete quantum evolution experiment with decoherence and measurement.
+    
+    Executes a quantum circuit that:
+    1. Prepares an initial superposition state
+    2. Applies unitary evolution
+    3. Models environmental decoherence
+    4. Performs projective measurements
+    
+    The experiment follows standard quantum mechanical principles and measurement
+    theory, collecting statistics over multiple shots to build a measurement
+    distribution.
     
     Args:
         config: SimulationConfig object containing simulation parameters
         
     Returns:
-        Dictionary containing experiment results and analysis
+        Dictionary containing:
+        - Raw measurement counts
+        - Statistical analysis
+        - Quantum metrics (entropy, purity)
     """
     try:
         simulator = QuantumTimelineSimulator(config)
@@ -298,14 +337,14 @@ def run_timeline_experiment(config: SimulationConfig = SimulationConfig()) -> Di
         raise
 
 if __name__ == "__main__":
-    # Initialize rich console
+    # Initialize rich console for output
     console = Console()
     
-    # Example usage with custom configuration
+    # Configure quantum simulation parameters
     config = SimulationConfig(
         shots=1000,
-        death_probability=0.3,
-        decoherence_rate=0.05
+        projection_probability=0.3,  # Probability of state projection
+        decoherence_rate=0.05       # Environmental decoherence rate
     )
     
     try:
