@@ -41,6 +41,7 @@ class SimulationConfig:
     shots: int = 1000
     death_probability: float = 0.3
     decoherence_rate: float = 0.05
+    num_timelines: int = 2
 
     def __post_init__(self):
         if self.decoherence_rates is None:
@@ -156,8 +157,9 @@ class QuantumTimelineSimulator:
         """Apply a potential death event with configured probability."""
         try:
             theta = 2 * np.arcsin(np.sqrt(self.config.death_probability))
-            for i in range(self.config.num_timelines):
-                self.circuit.ry(theta, i)
+            # Apply death probability rotation to each trait qubit
+            for i in range(self.config.num_trait_qubits):
+                self.circuit.ry(theta, self.trait_qr[i])
             logger.info(f"Applied death event with probability {self.config.death_probability}")
         except Exception as e:
             logger.error(f"Failed to apply death event: {e}")
