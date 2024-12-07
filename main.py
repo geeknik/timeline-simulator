@@ -1,4 +1,8 @@
 from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister
+from rich.console import Console
+from rich.table import Table
+from rich.panel import Panel
+from rich.text import Text
 from qiskit_aer import AerSimulator
 from qiskit_aer import Aer  # Updated import
 from qiskit_aer.noise import NoiseModel, depolarizing_error  # Updated import
@@ -252,6 +256,9 @@ def run_timeline_experiment(config: SimulationConfig = SimulationConfig()) -> Di
         raise
 
 if __name__ == "__main__":
+    # Initialize rich console
+    console = Console()
+    
     # Example usage with custom configuration
     config = SimulationConfig(
         num_timelines=2,
@@ -262,15 +269,46 @@ if __name__ == "__main__":
     
     try:
         results = run_timeline_experiment(config)
-        print("\nExperiment Results:")
-        print(f"Survival Rate: {results['analysis']['survival_rate']:.2%}")
-        print(f"Death Rate: {results['analysis']['death_rate']:.2%}")
-        print("\nMeasurement Counts:")
-        for state, count in results['counts'].items():
-            print(f"  |{state}⟩: {count} ({count/config.shots:.1%})")
         
-        print("\nQuantum Metrics:")
-        print(f"Von Neumann Entropy: {results['analysis']['quantum_entropy']:.6f} bits")
-        print(f"Quantum State Purity: {results['analysis']['quantum_state_purity']:.6f}")
+        # Create results panel
+        results_table = Table(show_header=False)
+        results_table.add_row("Survival Rate", f"[green]{results['analysis']['survival_rate']:.2%}[/]")
+        results_table.add_row("Death Rate", f"[red]{results['analysis']['death_rate']:.2%}[/]")
+        
+        # Create measurement counts table
+        counts_table = Table(title="Measurement Counts", show_header=True)
+        counts_table.add_column("Quantum State", style="cyan")
+        counts_table.add_column("Count", justify="right")
+        counts_table.add_column("Percentage", justify="right")
+        
+        for state, count in results['counts'].items():
+            percentage = count/config.shots
+            color = "green" if state.count('1') == 0 else "yellow" if state.count('1') == 1 else "red"
+            counts_table.add_row(
+                f"|{state}⟩",
+                str(count),
+                f"[{color}]{percentage:.1%}[/]"
+            )
+        
+        # Create quantum metrics panel
+        metrics_table = Table(show_header=False)
+        metrics_table.add_row(
+            "Von Neumann Entropy",
+            f"[blue]{results['analysis']['quantum_entropy']:.6f}[/] bits"
+        )
+        metrics_table.add_row(
+            "Quantum State Purity",
+            f"[magenta]{results['analysis']['quantum_state_purity']:.6f}[/]"
+        )
+        
+        # Display everything
+        console.print("\n")
+        console.print(Panel(results_table, title="Experiment Results"))
+        console.print("\n")
+        console.print(counts_table)
+        console.print("\n")
+        console.print(Panel(metrics_table, title="Quantum Metrics"))
+        console.print("\n")
+        
     except Exception as e:
-        print(f"Experiment failed: {e}")
+        console.print(f"[red]Experiment failed: {e}[/]")
