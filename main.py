@@ -145,8 +145,8 @@ class QuantumTimelineSimulator:
             # Create a copy of circuit without measurements for state analysis
             state_circuit = QuantumCircuit(self.qr)
             for inst in self.circuit.data:
-                if inst[0].name != "measure":
-                    state_circuit.append(inst[0], inst[1], inst[2])
+                if inst.operation.name != "measure":
+                    state_circuit.append(inst.operation, inst.qubits, inst.clbits)
             
             # Run the measurement circuit
             backend = AerSimulator(noise_model=self.noise_model)
@@ -210,7 +210,7 @@ class QuantumTimelineSimulator:
                 'quantum_entropy': float(entropy_value),
                 'density_matrix': density_matrix.data.tolist(),
                 'reduced_density_matrices': [m.data.tolist() for m in reduced_matrices],
-                'quantum_state_purity': float(density_matrix.purity())
+                'quantum_state_purity': density_matrix.purity().real
             }
             
             logger.info(f"Analysis completed: Survival rate = {analysis['survival_rate']:.2%}")
@@ -262,12 +262,15 @@ if __name__ == "__main__":
     
     try:
         results = run_timeline_experiment(config)
-        print(f"\nExperiment Results:")
+        print("\nExperiment Results:")
         print(f"Survival Rate: {results['analysis']['survival_rate']:.2%}")
         print(f"Death Rate: {results['analysis']['death_rate']:.2%}")
-        print(f"Measurement Counts: {results['counts']}")
-        print(f"\nQuantum Metrics:")
-        print(f"Von Neumann Entropy: {results['analysis']['quantum_entropy']:.4f}")
-        print(f"Quantum State Purity: {results['analysis']['quantum_state_purity']:.4f}")
+        print("\nMeasurement Counts:")
+        for state, count in results['counts'].items():
+            print(f"  |{state}⟩: {count} ({count/config.shots:.1%})")
+        
+        print("\nQuantum Metrics:")
+        print(f"Von Neumann Entropy: {results['analysis']['quantum_entropy']:.6f} bits")
+        print(f"Quantum State Purity: {results['analysis']['quantum_state_purity']:.6f}")
     except Exception as e:
         print(f"Experiment failed: {e}")
