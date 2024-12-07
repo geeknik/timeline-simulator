@@ -94,16 +94,13 @@ class QuantumTimelineSimulator:
             self.noise_model = NoiseModel()
             trait_noise_models = self._create_noise_models()
             
-            # Combine all noise models into one
-            for trait_model in trait_noise_models.values():
-                # Add basic noise operations for each basis gate
-                for basis_gate in ['x', 'rz', 'h', 'cx']:
-                    # Get the error map for this model
-                    error_map = trait_model._local_quantum_errors
-                    # If we have errors defined for this gate
-                    if basis_gate in error_map:
-                        for error in error_map[basis_gate]:
-                            self.noise_model.add_all_qubit_quantum_error(error, basis_gate)
+            # Create a single noise model with basic quantum errors
+            error_1q = depolarizing_error(self.config.decoherence_rate, 1)
+            error_2q = depolarizing_error(self.config.decoherence_rate/2, 2)
+            
+            # Add quantum errors to the noise model
+            self.noise_model.add_all_qubit_quantum_error(error_1q, ['u1', 'u2', 'u3'])
+            self.noise_model.add_all_qubit_quantum_error(error_2q, ['cx'])
             
             # Track the current timestep
             self.current_step = 0
@@ -119,17 +116,16 @@ class QuantumTimelineSimulator:
             noise_models = {}
             for idx, rate in self.config.decoherence_rates.items():
                 model = NoiseModel()
-                # Create custom error channels for each trait
-                phase_error = depolarizing_error(rate, 1)
-                amp_error = depolarizing_error(rate/2, 1)  # Less amplitude damping
                 
-                # Add errors to specific operations
-                model.add_quantum_error(phase_error, ['rz', 'h'], [idx])
-                model.add_quantum_error(amp_error, ['x'], [idx])
+                # Single qubit depolarizing error
+                error_1q = depolarizing_error(rate, 1)
+                # Two qubit depolarizing error
+                error_2q = depolarizing_error(rate/2, 2)
                 
-                # Create and add two-qubit error for cx gates
-                two_qubit_error = depolarizing_error(rate/2, 2)  # Lower rate for 2-qubit gates
-                model.add_quantum_error(two_qubit_error, ['cx'], [idx, (idx+1) % self.config.num_trait_qubits])
+                # Add all-qubit quantum errors
+                model.add_all_qubit_quantum_error(error_1q, ['u1', 'u2', 'u3'])
+                model.add_all_qubit_quantum_error(error_2q, ['cx'])
+                
                 noise_models[idx] = model
             
             return noise_models
