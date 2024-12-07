@@ -96,11 +96,13 @@ class QuantumTimelineSimulator:
             
             # Combine all noise models into one
             for trait_model in trait_noise_models.values():
-                # Add all errors from each trait model to combined model
+                # Add basic noise operations for each basis gate
                 for basis_gate in ['x', 'rz', 'h', 'cx']:
-                    if trait_model.has_error(basis_gate):
-                        error_ops = trait_model.get_error(basis_gate)
-                        for error in error_ops:
+                    # Get the error map for this model
+                    error_map = trait_model._local_quantum_errors
+                    # If we have errors defined for this gate
+                    if basis_gate in error_map:
+                        for error in error_map[basis_gate]:
                             self.noise_model.add_all_qubit_quantum_error(error, basis_gate)
             
             # Track the current timestep
