@@ -348,7 +348,7 @@ if __name__ == "__main__":
     )
     
     try:
-        results = run_timeline_experiment(config)
+        results = run_quantum_evolution_experiment(config)
         
         # Create results panel
         results_table = Table(show_header=False)
