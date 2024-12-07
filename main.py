@@ -16,7 +16,11 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class SimulationConfig:
-    """Configuration parameters for quantum timeline simulation"""
+    """Configuration parameters for quantum timeline simulation.
+    
+    The parameters control the quantum mechanical aspects of timeline superposition,
+    decoherence effects, and measurement statistics in the life-death state space.
+    """
     num_timelines: int = 1
     decoherence_rate: float = 0.05
     shots: int = 1000
@@ -26,8 +30,19 @@ class QuantumTimelineSimulator:
     """
     A quantum simulator for exploring timeline deaths using quantum superposition and decoherence.
     
-    This implementation uses an updated Qiskit structure and includes enhanced error handling
-    and logging for robustness.
+    This implementation models the metaphysical uncertainty between life and death states
+    as a quantum superposition |ψ⟩ = α|alive⟩ + β|dead⟩. The decoherence effects represent
+    the gradual collapse of quantum uncertainty through environmental interaction.
+    
+    Key quantum mechanical concepts:
+    - Death events as quantum measurements
+    - Timeline branching through unitary evolution
+    - Decoherence as a model for mortality
+    - Information preservation in quantum states
+    
+    The simulator provides a rigorous mathematical framework for exploring the connection
+    between quantum measurement theory and consciousness, while maintaining the formal
+    structure of quantum mechanics.
     """
     def __init__(self, config: SimulationConfig = SimulationConfig()):
         """
