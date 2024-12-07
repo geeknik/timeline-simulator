@@ -96,9 +96,13 @@ class QuantumTimelineSimulator:
             
             # Combine all noise models into one
             for trait_model in trait_noise_models.values():
-                for op, noise_dict in trait_model._noise_instructions.items():
-                    for qargs, noise in noise_dict.items():
-                        self.noise_model.add_quantum_error(noise, op, qargs)
+                # Get all instructions from the noise model
+                for instruction in trait_model.instructions:
+                    # Get noise operations for this instruction
+                    noise_ops = trait_model.noise_instructions(instruction)
+                    # Add each noise operation to combined model
+                    for noise_op in noise_ops:
+                        self.noise_model.add_quantum_error(noise_op.noise_qubits, instruction, noise_op.qubits)
             
             # Track the current timestep
             self.current_step = 0
