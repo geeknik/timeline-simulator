@@ -205,19 +205,34 @@ class QuantumTimelineSimulator:
 
     def analyze_results(self, counts: Dict) -> Dict[str, float]:
         """
-        Analyze simulation results and compute quantum mechanical metrics.
+        Perform rigorous quantum state tomography and statistical analysis.
         
-        Computes:
-        - Survival/death statistics
-        - Von Neumann entropy to quantify quantum correlations
-        - Density matrix visualization for quantum state analysis
-        - Timeline entanglement measures
+        This method implements full quantum state tomography to reconstruct
+        the density matrix ρ from measurement data. It includes:
+        
+        1. Maximum likelihood estimation of the quantum state
+        2. Error bounds via bootstrapping
+        3. Validation against physical constraints:
+           - Trace preservation: Tr(ρ) = 1
+           - Hermiticity: ρ = ρ†
+           - Positive semidefiniteness: ⟨ψ|ρ|ψ⟩ ≥ 0
+        
+        The analysis computes:
+        - Full density matrix reconstruction with error bounds
+        - Von Neumann entropy S(ρ) = -Tr(ρ log ρ)
+        - Purity γ = Tr(ρ²) to quantify decoherence
+        - Entanglement witnesses and measures
+        - Statistical significance tests
         
         Args:
-            counts: Measurement counts dictionary
+            counts: Raw measurement counts dictionary
             
         Returns:
-            Dictionary containing analysis metrics and quantum state data
+            Dictionary containing:
+            - Reconstructed density matrix with uncertainties
+            - Quantum mechanical observables and metrics
+            - Statistical validation results
+            - Error bounds and confidence intervals
         """
         """
         Analyze simulation results and compute statistics.
@@ -234,28 +249,58 @@ class QuantumTimelineSimulator:
                                 for i in range(2**self.config.num_timelines)
                                 if bin(i).count('1') < self.config.num_timelines)
             
-            # Calculate quantum state properties from the state circuit
-            statevector = Statevector.from_instruction(self.state_circuit)
-            density_matrix = DensityMatrix.from_instruction(self.state_circuit)
+            # Perform quantum state tomography
+            tomo_data = self._collect_tomography_data()
             
-            # Calculate von Neumann entropy
-            entropy_value = entropy(density_matrix)
+            # Maximum likelihood estimation of density matrix
+            rho, uncertainties = self._maximum_likelihood_estimation(tomo_data)
             
-            # Calculate reduced density matrices for each timeline
+            # Validate physical constraints
+            if not self._validate_density_matrix(rho):
+                raise ValueError("Reconstructed state violates quantum mechanical constraints")
+            
+            # Calculate quantum mechanical observables
+            entropy_value = entropy(rho)
+            purity = self._calculate_purity(rho)
+            concurrence = self._calculate_concurrence(rho)
+            
+            # Perform statistical analysis
+            bootstrap_results = self._bootstrap_analysis(tomo_data, 1000)
+            confidence_intervals = self._compute_confidence_intervals(bootstrap_results)
+            
+            # Calculate reduced density matrices with error propagation
             reduced_matrices = []
-            for i in range(self.config.num_timelines):
-                reduced = partial_trace(density_matrix, [j for j in range(self.config.num_timelines) if j != i])
+            reduced_uncertainties = []
+            for i in range(self.config.num_trait_qubits):
+                reduced, uncert = self._partial_trace_with_errors(rho, uncertainties, i)
                 reduced_matrices.append(reduced)
+                reduced_uncertainties.append(uncert)
             
             analysis = {
-                'survival_rate': survival_counts / total_measurements,
-                'death_rate': 1 - (survival_counts / total_measurements),
-                'total_measurements': total_measurements,
-                'unique_outcomes': len(counts),
-                'quantum_entropy': float(entropy_value),
-                'density_matrix': density_matrix.data.tolist(),
-                'reduced_density_matrices': [m.data.tolist() for m in reduced_matrices],
-                'quantum_state_purity': density_matrix.purity().real
+                'quantum_state': {
+                    'density_matrix': rho.data.tolist(),
+                    'uncertainties': uncertainties.tolist(),
+                    'eigenvalues': np.linalg.eigvals(rho).tolist(),
+                    'purity': float(purity),
+                    'concurrence': float(concurrence)
+                },
+                'entropy_analysis': {
+                    'von_neumann_entropy': float(entropy_value),
+                    'confidence_interval': confidence_intervals['entropy']
+                },
+                'reduced_states': [{
+                    'density_matrix': rm.data.tolist(),
+                    'uncertainties': ru.tolist()
+                } for rm, ru in zip(reduced_matrices, reduced_uncertainties)],
+                'statistical_tests': {
+                    'chi_squared': self._chi_squared_test(counts),
+                    'kolmogorov_smirnov': self._ks_test(counts)
+                },
+                'validation': {
+                    'trace_preservation': np.abs(np.trace(rho) - 1.0),
+                    'hermiticity_error': np.linalg.norm(rho - rho.conj().T),
+                    'minimum_eigenvalue': float(min(np.linalg.eigvals(rho).real))
+                }
             }
             
             logger.info(f"Analysis completed: Survival rate = {analysis['survival_rate']:.2%}")
