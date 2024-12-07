@@ -90,8 +90,15 @@ class QuantumTimelineSimulator:
                 self.trait_cr, self.branch_cr
             )
             
-            # Create custom noise model for each trait
-            self.noise_models = self._create_noise_models()
+            # Create combined noise model for the simulator
+            self.noise_model = NoiseModel()
+            trait_noise_models = self._create_noise_models()
+            
+            # Combine all noise models into one
+            for trait_model in trait_noise_models.values():
+                for op, noise_dict in trait_model._noise_instructions.items():
+                    for qargs, noise in noise_dict.items():
+                        self.noise_model.add_quantum_error(noise, op, qargs)
             
             # Track the current timestep
             self.current_step = 0
