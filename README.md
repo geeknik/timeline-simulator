@@ -25,6 +25,8 @@ The simulator is built on Qiskit and provides a framework for studying quantum s
 
 ## Requirements
 
+- Python 3.8+
+
 ```python
 qiskit
 qiskit-aer
