@@ -78,7 +78,7 @@ The simulator provides detailed output including:
 
 The implementation is based on standard quantum mechanical formalism and decoherence theory. Key references:
 
-- Nielsen & Chuang (2010). Quantum Computation and Quantum Information
+- Nielsen, M. A., & Chuang, I. L. (2010). Quantum Computation and Quantum Information: 10th Anniversary Edition. Cambridge: Cambridge University Press.
 - Zurek (2003). Decoherence and the transition from quantum to classical
 - Schlosshauer (2007). Decoherence and the Quantum-to-Classical Transition
 
