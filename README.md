@@ -74,6 +74,8 @@ The simulator provides detailed output including:
 - Total unique states observed
 - Rich console visualization of results
 
+<img width="1798" height="1070" alt="image" src="https://github.com/user-attachments/assets/ea679c57-1831-4ddd-9884-a1dfb4fcc823" />
+
 ## Scientific Background
 
 The implementation is based on standard quantum mechanical formalism and decoherence theory. Key references:
